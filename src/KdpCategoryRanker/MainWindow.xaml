@@ -1,0 +1,180 @@
+<mah:MetroWindow x:Class="KdpCategoryRanker.MainWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+                 Title="KDP Category Ranker" Height="800" Width="1200"
+                 WindowStartupLocation="CenterScreen"
+                 IconTemplate="{StaticResource IconTemplate}">
+
+    <mah:MetroWindow.Resources>
+        <DataTemplate x:Key="IconTemplate">
+            <Grid Width="16" Height="16">
+                <Ellipse Fill="#FF007ACC" Width="16" Height="16"/>
+                <TextBlock Text="K" FontSize="10" FontWeight="Bold"
+                          Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Grid>
+        </DataTemplate>
+    </mah:MetroWindow.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#FF007ACC" Padding="20,10">
+            <StackPanel>
+                <TextBlock Text="KDP Category Ranker" FontSize="24" FontWeight="Bold" Foreground="White"/>
+                <TextBlock Text="Find the perfect Amazon KDP categories for your books" FontSize="12" Foreground="#FFE6F3FF"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Main Content -->
+        <TabControl Grid.Row="1" Margin="10">
+            <TabItem Header="🚀 Category Recommender">
+                <ScrollViewer>
+                    <StackPanel Margin="20">
+                        <TextBlock Text="Category Recommender" FontSize="20" FontWeight="Bold" Margin="0,0,0,20"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="20"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Input Panel -->
+                            <Border Grid.Column="0" BorderBrush="#FFCCCCCC" BorderThickness="1" Padding="15" CornerRadius="5">
+                                <StackPanel>
+                                    <TextBlock Text="📝 Book Details" FontSize="16" FontWeight="Bold" Margin="0,0,0,15"/>
+
+                                    <TextBlock Text="Book Title:" Margin="0,0,0,5"/>
+                                    <TextBox x:Name="BookTitleTextBox" Padding="8" Margin="0,0,0,10"
+                                            Text="{Binding BookTitle, UpdateSourceTrigger=PropertyChanged}"/>
+
+                                    <TextBlock Text="Keywords (comma separated):" Margin="0,0,0,5"/>
+                                    <TextBox x:Name="KeywordsTextBox" Padding="8" Height="80" TextWrapping="Wrap"
+                                            AcceptsReturn="True" Margin="0,0,0,10"
+                                            Text="{Binding Keywords, UpdateSourceTrigger=PropertyChanged}"/>
+
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="10"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="Price ($):" Margin="0,0,0,5"/>
+                                            <TextBox x:Name="PriceTextBox" Padding="8"
+                                                    Text="{Binding Price, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="Daily Sales Target:" Margin="0,0,0,5"/>
+                                            <TextBox x:Name="SalesTargetTextBox" Padding="8"
+                                                    Text="{Binding DailySalesTarget, UpdateSourceTrigger=PropertyChanged}"/>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <Button Content="🔍 Find Best Categories"
+                                           Background="#FF007ACC" Foreground="White"
+                                           Padding="15,10" Margin="0,20,0,0"
+                                           Command="{Binding FindCategoriesCommand}"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Results Panel -->
+                            <Border Grid.Column="2" BorderBrush="#FFCCCCCC" BorderThickness="1" Padding="15" CornerRadius="5">
+                                <StackPanel>
+                                    <TextBlock Text="📊 Recommended Categories" FontSize="16" FontWeight="Bold" Margin="0,0,0,15"/>
+
+                                    <ListView x:Name="CategoryResultsListView" Height="300"
+                                             ItemsSource="{Binding CategoryRecommendations}">
+                                        <ListView.View>
+                                            <GridView>
+                                                <GridViewColumn Header="Category" Width="200">
+                                                    <GridViewColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <TextBlock Text="{Binding Name}" TextWrapping="Wrap"/>
+                                                        </DataTemplate>
+                                                    </GridViewColumn.CellTemplate>
+                                                </GridViewColumn>
+                                                <GridViewColumn Header="Score" Width="60" DisplayMemberBinding="{Binding Score}"/>
+                                                <GridViewColumn Header="Daily Sales Needed" Width="100" DisplayMemberBinding="{Binding RequiredDailySales}"/>
+                                                <GridViewColumn Header="Success %" Width="70" DisplayMemberBinding="{Binding SuccessProbability}"/>
+                                            </GridView>
+                                        </ListView.View>
+                                    </ListView>
+
+                                    <TextBlock x:Name="StatusTextBlock"
+                                              Text="{Binding StatusMessage}"
+                                              Margin="0,10,0,0"
+                                              Foreground="Gray"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="🔍 Keyword Research">
+                <StackPanel Margin="20">
+                    <TextBlock Text="Keyword Research" FontSize="20" FontWeight="Bold" Margin="0,0,0,20"/>
+                    <TextBlock Text="Coming Soon - Keyword analysis and research tools" FontSize="14" Foreground="Gray"/>
+                </StackPanel>
+            </TabItem>
+
+            <TabItem Header="📚 Category Browser">
+                <StackPanel Margin="20">
+                    <TextBlock Text="Category Browser" FontSize="20" FontWeight="Bold" Margin="0,0,0,20"/>
+                    <TextBlock Text="Coming Soon - Browse all Amazon KDP categories" FontSize="14" Foreground="Gray"/>
+                </StackPanel>
+            </TabItem>
+
+            <TabItem Header="⚙️ Settings">
+                <ScrollViewer>
+                    <StackPanel Margin="20">
+                        <TextBlock Text="Settings" FontSize="20" FontWeight="Bold" Margin="0,0,0,20"/>
+
+                        <TextBlock Text="🔄 Updates" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                            <Button Content="Check for Updates"
+                                   Background="#FF28A745" Foreground="White"
+                                   Padding="10,5"
+                                   Command="{Binding CheckForUpdatesCommand}"/>
+                            <TextBlock Text="{Binding UpdateStatus}"
+                                      VerticalAlignment="Center"
+                                      Margin="15,0,0,0"/>
+                        </StackPanel>
+
+                        <TextBlock Text="ℹ️ About" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,10">
+                            KDP Category Ranker helps authors find the best Amazon KDP categories for their books.
+                            <LineBreak/>
+                            <LineBreak/>
+                            Version: 1.0.0
+                            <LineBreak/>
+                            Build: Clean Modern Implementation
+                        </TextBlock>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="2" Background="#FFF5F5F5" BorderBrush="#FFCCCCCC" BorderThickness="0,1,0,0">
+            <Grid Margin="10,5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" Text="Ready" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Text="KDP Category Ranker v1.0.0" VerticalAlignment="Center" Foreground="Gray"/>
+            </Grid>
+        </Border>
+    </Grid>
+</mah:MetroWindow>
