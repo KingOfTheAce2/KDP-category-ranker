@@ -1,9 +1,12 @@
+using System;
+using System.Windows;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System.Windows;
 using KdpCategoryRanker.Services;
 using KdpCategoryRanker.ViewModels;
+
+#nullable enable
 
 namespace KdpCategoryRanker;
 

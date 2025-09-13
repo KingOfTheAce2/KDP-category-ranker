@@ -1,7 +1,9 @@
+using System;
+using System.Threading.Tasks;
+using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using KdpCategoryRanker.Services;
-using System.Windows.Input;
 
 namespace KdpCategoryRanker.ViewModels;
 
