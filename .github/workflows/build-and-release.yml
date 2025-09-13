@@ -1,0 +1,235 @@
+name: Build and Release KDP Category Ranker
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Triggers on version tags like v1.0.0
+  workflow_dispatch:  # Allows manual triggering
+    inputs:
+      version:
+        description: 'Release version (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0'
+      prerelease:
+        description: 'Mark as pre-release'
+        type: boolean
+        default: false
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  PROJECT_PATH: 'src/KDP-CATEGORY-RANKERApp/KDP-CATEGORY-RANKERApp.csproj'
+  SOLUTION_PATH: 'KDP-CATEGORY-RANKER.sln'
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    
+    steps:
+    - name: 🔄 Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for versioning
+    
+    - name: 🔧 Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: 📝 Get version from tag or input
+      id: version
+      shell: pwsh
+      run: |
+        if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+          $version = "${{ github.event.inputs.version }}"
+        } else {
+          $version = "${{ github.ref_name }}" -replace '^v', ''
+        }
+        echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+        echo "Release version: $version"
+    
+    - name: 🔍 Restore dependencies
+      run: dotnet restore ${{ env.SOLUTION_PATH }}
+    
+    - name: 🧪 Run tests
+      run: dotnet test ${{ env.SOLUTION_PATH }} --configuration Release --verbosity minimal --no-restore
+    
+    - name: 📦 Build Portable Version
+      shell: pwsh
+      run: |
+        $version = "${{ steps.version.outputs.VERSION }}"
+        
+        dotnet publish ${{ env.PROJECT_PATH }} `
+          --configuration Release `
+          --runtime win-x64 `
+          --self-contained true `
+          --output "dist/portable" `
+          /p:PublishSingleFile=true `
+          /p:IncludeNativeLibrariesForSelfExtract=true `
+          /p:EnableCompressionInSingleFile=true `
+          /p:Version=$version `
+          /p:AssemblyVersion=$version `
+          /p:FileVersion=$version
+          
+        # Rename for clarity
+        Rename-Item "dist/portable/KDP-CATEGORY-RANKERApp.exe" "KDP-Category-Ranker-Portable.exe"
+        
+        # Create portable package
+        New-Item -ItemType Directory -Path "dist/portable/SampleData" -Force
+        
+        # Add sample data files
+        $sampleCategories = @{
+          "categories" = @(
+            @{
+              "id" = 1
+              "name" = "Business > Entrepreneurship > Small Business"
+              "bestseller_rank_requirement" = 2500
+              "estimated_daily_sales" = 25
+              "difficulty_score" = 35
+            }
+          )
+        }
+        $sampleCategories | ConvertTo-Json -Depth 10 | Out-File "dist/portable/SampleData/sample-categories.json" -Encoding UTF8
+        
+        # Create README
+        @"
+        # KDP Category Ranker - Portable Version $version
+        
+        ## Quick Start
+        1. Double-click KDP-Category-Ranker-Portable.exe to run
+        2. No installation required - runs from any folder
+        3. All data stored locally in the application folder
+        
+        ## Features
+        - Category recommendation engine
+        - Keyword research tools  
+        - Competition analysis
+        - Bestseller planning
+        - Automatic updates via GitHub
+        
+        For support, visit: https://github.com/${{ github.repository }}
+        "@ | Out-File "dist/portable/README.txt" -Encoding UTF8
+    
+    - name: ⚡ Build Optimized Version
+      shell: pwsh
+      run: |
+        $version = "${{ steps.version.outputs.VERSION }}"
+        
+        dotnet publish ${{ env.PROJECT_PATH }} `
+          --configuration Release `
+          --runtime win-x64 `
+          --self-contained true `
+          --output "dist/optimized" `
+          /p:PublishSingleFile=true `
+          /p:IncludeNativeLibrariesForSelfExtract=true `
+          /p:EnableCompressionInSingleFile=true `
+          /p:PublishTrimmed=true `
+          /p:PublishReadyToRun=true `
+          /p:Version=$version `
+          /p:AssemblyVersion=$version `
+          /p:FileVersion=$version
+          
+        # Rename for clarity
+        Rename-Item "dist/optimized/KDP-CATEGORY-RANKERApp.exe" "KDP-Category-Ranker-Optimized.exe"
+    
+    - name: 📊 Generate build info
+      shell: pwsh
+      run: |
+        $version = "${{ steps.version.outputs.VERSION }}"
+        $buildDate = Get-Date -Format "yyyy-MM-dd HH:mm:ss UTC"
+        $commitHash = "${{ github.sha }}".Substring(0,7)
+        
+        # Get file sizes
+        $portableSize = (Get-Item "dist/portable/KDP-Category-Ranker-Portable.exe").Length
+        $optimizedSize = (Get-Item "dist/optimized/KDP-Category-Ranker-Optimized.exe").Length
+        
+        $buildInfo = @{
+          version = $version
+          buildDate = $buildDate
+          commitHash = $commitHash
+          portableSize = $portableSize
+          optimizedSize = $optimizedSize
+          runtime = "win-x64"
+        }
+        
+        $buildInfo | ConvertTo-Json | Out-File "dist/build-info.json" -Encoding UTF8
+        
+        # Create release notes
+        $releaseNotes = @"
+        # KDP Category Ranker v$version
+        
+        🚀 **What's New in This Release**
+        
+        ## 📦 Downloads
+        - **KDP-Category-Ranker-Portable.exe** - Single-file executable, no installation required ($([math]::Round($portableSize/1MB,1)) MB)
+        - **KDP-Category-Ranker-Optimized.exe** - High-performance build with faster startup ($([math]::Round($optimizedSize/1MB,1)) MB)
+        
+        ## 🎯 Key Features
+        - 🚀 **Category Recommender**: AI-powered analysis to find the best KDP categories
+        - 📊 **Bestseller Planning**: Calculate daily sales needed for bestseller status
+        - 🔍 **Keyword Research**: Find profitable keywords with competition analysis
+        - 📈 **Revenue Projections**: See potential earnings at different bestseller positions
+        - 🌍 **Global Markets**: Support for 8 major Amazon marketplaces
+        - 🔄 **Auto-Updates**: Automatic update notifications when new versions are available
+        
+        ## 💻 System Requirements
+        - Windows 10/11 (64-bit)
+        - 4GB RAM minimum, 8GB recommended
+        - No additional software required (self-contained)
+        
+        ## 🚀 Quick Start
+        1. Download either version above
+        2. Run the .exe file (no installation needed)
+        3. Complete the first-run setup wizard
+        4. Start with the Category Recommender tool
+        
+        ## 🔄 Automatic Updates
+        The application will automatically check for updates and notify you when new versions are available.
+        
+        ---
+        **Build Info**: $commitHash | Built on $buildDate
+        "@ | Out-File "dist/RELEASE_NOTES.md" -Encoding UTF8
+        
+        echo "PORTABLE_SIZE=$([math]::Round($portableSize/1MB,1))" >> $env:GITHUB_OUTPUT
+        echo "OPTIMIZED_SIZE=$([math]::Round($optimizedSize/1MB,1))" >> $env:GITHUB_OUTPUT
+    
+    - name: 📁 Create ZIP packages
+      shell: pwsh
+      run: |
+        $version = "${{ steps.version.outputs.VERSION }}"
+        
+        # Create portable ZIP
+        Compress-Archive -Path "dist/portable/*" -DestinationPath "dist/KDP-Category-Ranker-Portable-v$version.zip"
+        
+        # Create optimized ZIP (just the exe for now)
+        Compress-Archive -Path "dist/optimized/KDP-Category-Ranker-Optimized.exe" -DestinationPath "dist/KDP-Category-Ranker-Optimized-v$version.zip"
+        
+        # List all artifacts
+        Write-Host "📦 Created release artifacts:"
+        Get-ChildItem "dist" -File | ForEach-Object {
+          $size = [math]::Round($_.Length / 1MB, 1)
+          Write-Host "  - $($_.Name) ($size MB)"
+        }
+    
+    - name: 🚀 Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v${{ steps.version.outputs.VERSION }}
+        name: KDP Category Ranker v${{ steps.version.outputs.VERSION }}
+        body_path: dist/RELEASE_NOTES.md
+        prerelease: ${{ github.event.inputs.prerelease == 'true' }}
+        files: |
+          dist/KDP-Category-Ranker-Portable.exe
+          dist/KDP-Category-Ranker-Optimized.exe
+          dist/KDP-Category-Ranker-Portable-v${{ steps.version.outputs.VERSION }}.zip
+          dist/KDP-Category-Ranker-Optimized-v${{ steps.version.outputs.VERSION }}.zip
+          dist/build-info.json
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: 📊 Build Summary
+      shell: pwsh
+      run: |
+        Write-Host "✅ Build completed successfully!" -ForegroundColor Green
+        Write-Host "📦 Release v${{ steps.version.outputs.VERSION }} created" -ForegroundColor Cyan
+        Write-Host "🔗 GitHub Release: https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.VERSION }}" -ForegroundColor Yellow
+        Write-Host "📁 Artifacts uploaded and ready for download" -ForegroundColor Green

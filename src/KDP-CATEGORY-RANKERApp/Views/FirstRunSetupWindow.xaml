@@ -1,0 +1,27 @@
+&lt;mah:MetroWindow x:Class="KDP_CATEGORY_RANKERApp.Views.FirstRunSetupWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
+                 xmlns:views="clr-namespace:KDP_CATEGORY_RANKERApp.Views"
+                 Title="KDP Category Ranker - First Run Setup"
+                 Width="900" Height="700"
+                 WindowStartupLocation="CenterScreen"
+                 ResizeMode="NoResize"
+                 ShowIconOnTitleBar="True"
+                 ShowTitleBar="True"
+                 ShowCloseButton="False"
+                 ShowMaxRestoreButton="False"
+                 ShowMinButton="False">
+
+    &lt;mah:MetroWindow.Resources>
+        &lt;Style TargetType="mah:MetroWindow" BasedOn="{StaticResource {x:Type mah:MetroWindow}}">
+            &lt;Setter Property="BorderBrush" Value="{DynamicResource MahApps.Brushes.Accent}"/>
+            &lt;Setter Property="BorderThickness" Value="1"/>
+        &lt;/Style>
+    &lt;/mah:MetroWindow.Resources>
+
+    &lt;Grid>
+        &lt;views:FirstRunSetupView/>
+    &lt;/Grid>
+    
+&lt;/mah:MetroWindow>
