@@ -73,7 +73,6 @@ jobs:
           /p:PublishSingleFile=true `
           /p:IncludeNativeLibrariesForSelfExtract=true `
           /p:EnableCompressionInSingleFile=true `
-          /p:PublishTrimmed=true `
           /p:PublishReadyToRun=true `
           /p:Version=$version
 
