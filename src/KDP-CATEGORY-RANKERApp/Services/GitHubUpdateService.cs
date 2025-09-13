@@ -250,8 +250,10 @@ public class GitHubUpdateService : IGitHubUpdateService
                 }
             }
             
-            // Fallback from configuration
-            return _configuration["GitHub:DefaultOwner"] ?? "your-username";
+            // Fallback from configuration or environment
+            return _configuration["GitHub:DefaultOwner"] ??
+                   Environment.GetEnvironmentVariable("GITHUB_REPOSITORY_OWNER") ??
+                   "kdp-category-ranker";
         }
         catch (Exception ex)
         {

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Text.Json;
@@ -35,20 +36,33 @@ public class AutoUpdateService : IAutoUpdateService
     private readonly HttpClient _httpClient;
     private readonly ILogger<AutoUpdateService> _logger;
     private readonly IPortableConfigService _configService;
-    
-    private const string UPDATE_CHECK_URL = "https://api.github.com/repos/{GITHUB_USERNAME}/KDP-category-ranker/releases/latest";
+    private readonly IConfiguration _configuration;
+
+    private readonly string _updateCheckUrl;
     private const string CURRENT_VERSION = "1.0.0"; // This should be read from assembly or config
 
     public AutoUpdateService(
-        HttpClient httpClient, 
+        HttpClient httpClient,
         ILogger<AutoUpdateService> logger,
-        IPortableConfigService configService)
+        IPortableConfigService configService,
+        IConfiguration configuration)
     {
         _httpClient = httpClient;
         _logger = logger;
         _configService = configService;
-        
+        _configuration = configuration;
+
+        // Get repository info from configuration with fallbacks
+        var owner = _configuration["GitHub:Owner"] ??
+                     DetectRepositoryOwner() ??
+                     Environment.GetEnvironmentVariable("GITHUB_REPOSITORY_OWNER") ??
+                     "kdp-category-ranker";
+        var repository = _configuration["GitHub:Repository"] ?? "KDP-category-ranker";
+        _updateCheckUrl = $"https://api.github.com/repos/{owner}/{repository}/releases/latest";
+
         _httpClient.DefaultRequestHeaders.Add("User-Agent", "KDP-Category-Ranker-AutoUpdater/1.0");
+
+        _logger.LogInformation("Auto-update service configured for {Owner}/{Repository}", owner, repository);
     }
 
     public string GetCurrentVersion()
@@ -88,7 +102,7 @@ public class AutoUpdateService : IAutoUpdateService
         {
             _logger.LogInformation("Checking for updates...");
             
-            var response = await _httpClient.GetAsync(UPDATE_CHECK_URL);
+            var response = await _httpClient.GetAsync(_updateCheckUrl);
             
             if (!response.IsSuccessStatusCode)
             {
@@ -324,6 +338,35 @@ del ""%~f0"" >nul 2>&1
         
         // Exit current application
         System.Windows.Application.Current.Shutdown();
+    }
+
+    private string? DetectRepositoryOwner()
+    {
+        try
+        {
+            // Try to detect from git remote origin if available
+            var gitConfigPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".git", "config");
+            if (File.Exists(gitConfigPath))
+            {
+                var gitConfig = File.ReadAllText(gitConfigPath);
+                var match = System.Text.RegularExpressions.Regex.Match(
+                    gitConfig,
+                    @"url = https://github\.com/([^/]+)/",
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+                if (match.Success)
+                {
+                    return match.Groups[1].Value;
+                }
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not detect repository owner");
+            return null;
+        }
     }
 }
 
